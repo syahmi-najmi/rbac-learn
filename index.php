@@ -1,58 +1,45 @@
 <?php
 session_start();
 
-require_once('config.php'); //include database configuration.
+require_once('inc/config.php');
 
 if (isset($_POST['login'])) {
-    if (!empty($_POST['email']) && !empty($_POST['password'])) { //sanitize and trim user input
+    if (!empty($_POST['email']) && !empty($_POST['password'])) {
         $email = trim($_POST['email']);
         $password = trim($_POST['password']);
 
-        // use prepared statement to prevent sql injection
-        $sql = "Select * from tbl_users WHERE email = ?";
-        if ($stmt = $conn->prepare($sql)) {
-            $stmt->bin_param("s", $email);
-            $stmt->execute();
-            $result = $stmt->get_result();
+        $md5Password = md5($password);
 
-            if ($result->num_rows === 1) {
-                $user = $result->fetch_assoc();
+        $sql = "select * from tbl_users where email = '" . $email . "' and password = '" . $md5Password . "'";
+        $rs = mysqli_query($conn, $sql);
+        $getNumRows = mysqli_num_rows($rs);
 
-                //verify the password using password_verify()
-                if (password_verify($password, $user['password'])) {
-                    unset($user['password']);
-                    $_SESSION = $user;
+        if ($getNumRows == 1) {
+            $getUserRow = mysqli_fetch_assoc($rs);
+            unset($getUserRow['password']);
 
-                    //redirect to dashboard
-                    header('location:dashboad.php');
-                    exit;
-                } else {
-                    $errorMsg = "Wrong email or password";
-                }
-            } else {
-                $errorMsg = "Wrong email or password";
-            }
+            $_SESSION = $getUserRow;
 
-            $stmt->close();
+            header('location:dashboard.php');
+            exit;
         } else {
-            $errorMsg = "Database query failed";
+            $errorMsg = "Wrong email or password";
         }
-    } else {
-        $errorMsg = "Please fill in the both email and password";
     }
 }
 
-// handle logout
 if (isset($_GET['logout']) && $_GET['logout'] == true) {
     session_destroy();
     header("location:index.php");
     exit;
 }
 
-//handle access errors
-if (isset($_GET['Imsg']) && $_GET['Ismg'] == true) {
-    $errorMsg = "Login required to access the dashboard.";
+
+if (isset($_GET['lmsg']) && $_GET['lmsg'] == true) {
+    $errorMsg = "Login required to access dashboard";
 }
+
+
 ?>
 
 <!DOCTYPE html>
