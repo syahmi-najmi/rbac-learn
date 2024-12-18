@@ -6,18 +6,21 @@ define("DB_NAME", "demo");
 
 $conn = mysqli_connect(HOST, DB_USER, DB_PASS, DB_NAME);
 
-if (!$conn) {
-    die(mysqli_error());
+if (mysqli_connect_errno()) {
+    die("Failed to connect to MySQL: " . mysqli_connect_error());
 }
+
 function getUserAccessRoleByID($id)
 {
     global $conn;
 
-    $query = "select user_role from tbl_user_role where  id = " . $id;
+    $stmt = $conn->prepare("SELECT user_role FROM tbl_user_role WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
 
-    $rs = mysqli_query($conn, $query);
-    $row = mysqli_fetch_assoc($rs);
+    $result = $stmt->get_result();
+    $row = $result->fetch_assoc();
 
-    return $row['user_role'];
+    return $row['user_role'] ?? null; // Return null if no matching record is found
 }
 ?>
